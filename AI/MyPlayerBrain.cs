@@ -177,9 +177,18 @@ namespace PlayerCSharpAI2.AI
 				// bugbug - we return if not us because the below code is only for when we need a new path or our limo hit a bus stop.
 				// if you want to act on other players arriving at bus stops, you need to remove this. But make sure you use Me, not
 				// plyrStatus for the Player you are updatiing (particularly to determine what tile to start your path from).
-				if (plyrStatus != Me)
-					return;
-
+                if (plyrStatus != Me)
+                {
+                    //If someone else picked up a passenger & it was out target passenger &
+                    //we were not going to get coffee, abandon the destination
+                    if (plyrStatus.Limo.Passenger == Me.PickUp.First() &&
+                        (Stores.Where(st => st.BusStop == Me.Limo.Path.Last()).Count() == 0))
+                    {
+                        Me.Limo.Path.Clear();
+                        Me.PickUp.Clear();
+                    }
+                    return;
+                }
 				if (status == PlayerAIBase.STATUS.UPDATE)
 				{
 					MaybePlayPowerUp();
