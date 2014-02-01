@@ -303,24 +303,19 @@ namespace PlayerCSharpAI2.AI
 			PowerUp pu2 = PowerUpHand.FirstOrDefault(p => p.OkToPlay);
 			if (pu2 == null)
 				return;
-			// 10% discard, 90% play
-			if (rand.Next(10) == 0)
-				playCards(PlayerAIBase.CARD_ACTION.DISCARD, pu2);
-			else
+			// 100% play
+			if (pu2.Card == PowerUp.CARD.MOVE_PASSENGER)
+				pu2.Passenger = Passengers.OrderBy(c => rand.Next()).First(p => p.Car == null);
+			if (pu2.Card == PowerUp.CARD.CHANGE_DESTINATION || pu2.Card == PowerUp.CARD.STOP_CAR)
 			{
-				if (pu2.Card == PowerUp.CARD.MOVE_PASSENGER)
-					pu2.Passenger = Passengers.OrderBy(c => rand.Next()).First(p => p.Car == null);
-				if (pu2.Card == PowerUp.CARD.CHANGE_DESTINATION || pu2.Card == PowerUp.CARD.STOP_CAR)
-				{
-					IList<Player> plyrsWithPsngrs = Players.Where(pl => pl.Guid != Me.Guid && pl.Limo.Passenger != null).ToList();
-					if (plyrsWithPsngrs.Count == 0)
-						return;
-					pu2.Player = plyrsWithPsngrs.OrderBy(c => rand.Next()).First();
-				}
-				if (log.IsInfoEnabled)
-					log.Info(string.Format("Request play card {0} ", pu2));
-				playCards(PlayerAIBase.CARD_ACTION.PLAY, pu2);
+				IList<Player> plyrsWithPsngrs = Players.Where(pl => pl.Guid != Me.Guid && pl.Limo.Passenger != null).ToList();
+				if (plyrsWithPsngrs.Count == 0)
+					return;
+				pu2.Player = plyrsWithPsngrs.OrderBy(c => rand.Next()).First();
 			}
+			if (log.IsInfoEnabled)
+				log.Info(string.Format("Request play card {0} ", pu2));
+			playCards(PlayerAIBase.CARD_ACTION.PLAY, pu2);
 			PowerUpHand.Remove(pu2);
 		}
 
