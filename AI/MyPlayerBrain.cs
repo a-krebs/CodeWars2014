@@ -232,21 +232,30 @@ namespace PlayerCSharpAI2.AI
 						break;
 					case PlayerAIBase.STATUS.PASSENGER_REFUSED_ENEMY:
                         //If we have a Move Passenger card, use it to move the enemy
-                        PowerUp pu2 = PowerUpHand.Where(card => card.Card == PowerUp.CARD.MOVE_PASSENGER)
+                        PowerUp pu2 = PowerUpHand.Where(card => card.Card == PowerUp.CARD.MOVE_PASSENGER || card.Card == PowerUp.CARD.RELOCATE_ALL_PASSENGERS)
                             .FirstOrDefault(p => p.OkToPlay);
                         //We have a card to play!
                         if (pu2 != null)
                         {
-                            pu2.Passenger = Me.Limo.Passenger.Enemies.Where(en => Me.Limo.Passenger.Destination.Passengers.Contains(en)).First();
-                            if (pu2.Passenger != null)
+                            if (pu2.Card == PowerUp.CARD.MOVE_PASSENGER)
                             {
-                                if (log.IsInfoEnabled)
-                                    log.Info(string.Format("Moving enemy away from BusStop", pu2));
+                                pu2.Passenger = Me.Limo.Passenger.Enemies.Where(en => Me.Limo.Passenger.Destination.Passengers.Contains(en)).First();
+                                if (pu2.Passenger != null)
+                                {
+                                    if (log.IsInfoEnabled)
+                                        log.Info(string.Format("Moving enemy away from BusStop", pu2));
+                                    playCards(PlayerAIBase.CARD_ACTION.PLAY, pu2);
+                                    PowerUpHand.Remove(pu2);
+                                    ptDest = Me.Limo.Passenger.Destination.BusStop;
+                                    break;
+                                }
+                            }
+                            else
+                            {
                                 playCards(PlayerAIBase.CARD_ACTION.PLAY, pu2);
                                 PowerUpHand.Remove(pu2);
-                                ptDest = Me.Limo.Passenger.Destination.BusStop;
-                                break;
                             }
+
                         }
                         //Fallthrough
                         ptDest =
@@ -335,26 +344,41 @@ namespace PlayerCSharpAI2.AI
 				}
 				return;
 			}
-
-			// can we play one? Don't play Passenger Move Card
-			PowerUp pu2 = PowerUpHand.Where(card => card.Card != PowerUp.CARD.MOVE_PASSENGER)
+            PowerUp pu2;
+            //Play card to slow others always
+            pu2 = PowerUpHand.Where(card => card.Card != PowerUp.CARD.ALL_OTHER_CARS_QUARTER_SPEED)
                 .FirstOrDefault(p => p.OkToPlay);
-			if (pu2 == null)
+            if (pu2 != null)
+            {
+                playCards(PlayerAIBase.CARD_ACTION.PLAY, pu2);
+                PowerUpHand.Remove(pu2);
+                pu2 = null;
+            }
+			// can we play one? Don't play Passenger Move Card
+            pu2 = PowerUpHand.Where(card => card.Card != PowerUp.CARD.MOVE_PASSENGER && card.Card != PowerUp.CARD.ALL_OTHER_CARS_QUARTER_SPEED)
+                .FirstOrDefault(p => p.OkToPlay);
+            if (pu2 == null || (rand.Next(50) < 30))
 				return;
-			// 100% play
-			if (pu2.Card == PowerUp.CARD.MOVE_PASSENGER)
-				pu2.Passenger = Passengers.OrderBy(c => rand.Next()).First(p => p.Car == null);
-			if (pu2.Card == PowerUp.CARD.CHANGE_DESTINATION || pu2.Card == PowerUp.CARD.STOP_CAR)
-			{
-				IList<Player> plyrsWithPsngrs = Players.Where(pl => pl.Guid != Me.Guid && pl.Limo.Passenger != null).ToList();
-				if (plyrsWithPsngrs.Count == 0)
-					return;
-				pu2.Player = plyrsWithPsngrs.OrderBy(c => rand.Next()).First();
-			}
-			if (log.IsInfoEnabled)
-				log.Info(string.Format("Request play card {0} ", pu2));
-			playCards(PlayerAIBase.CARD_ACTION.PLAY, pu2);
-			PowerUpHand.Remove(pu2);
+			// 100% play of some cards :)
+            if (pu2.Card == PowerUp.CARD.CHANGE_DESTINATION || pu2.Card == PowerUp.CARD.STOP_CAR)
+            {
+                IList<Player> plyrsWithPsngrs = Players.Where(pl => pl.Guid != Me.Guid && pl.Limo.Passenger != null).ToList();
+                if (plyrsWithPsngrs.Count == 0)
+                    return;
+                pu2.Player = plyrsWithPsngrs.OrderBy(c => c.Score).First();
+                if (log.IsInfoEnabled)
+                    log.Info(string.Format("Request play card {0} ", pu2));
+                playCards(PlayerAIBase.CARD_ACTION.PLAY, pu2);
+                PowerUpHand.Remove(pu2);
+            }
+            else
+            {
+                if (log.IsInfoEnabled)
+                    log.Info(string.Format("Request discard card {0} ", pu2));
+                playCards(PlayerAIBase.CARD_ACTION.DISCARD, pu2);
+                PowerUpHand.Remove(pu2);
+            }
+
 		}
 
 		/// <summary>
