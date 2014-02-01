@@ -189,6 +189,16 @@ namespace PlayerCSharpAI2.AI
                     }
                     return;
                 }
+                //Activate cards, if necessary
+                IEnumerable<PowerUp> inactivePowerUpList = PowerUpHand.Where(card => card.OkToPlay == false);
+                if (inactivePowerUpList.Count() > 0 && 
+                    (Stores.Select(store => store.BusStop).Contains(Me.Limo.TilePosition) ||
+                    Companies.Select(comp => comp.BusStop).Contains(Me.Limo.TilePosition))){
+                        foreach (PowerUp p in inactivePowerUpList)
+                        {
+                            p.OkToPlay = true;
+                        }
+                }
 				if (status == PlayerAIBase.STATUS.UPDATE)
 				{
 					MaybePlayPowerUp();
