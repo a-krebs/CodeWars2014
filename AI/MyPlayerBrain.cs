@@ -480,7 +480,7 @@ namespace PlayerCSharpAI2.AI
 			pickup.AddRange(passengers.Where(
 				psngr =>
 					(!me.PassengersDelivered.Contains(psngr)) && (psngr != me.Limo.Passenger) && (psngr.Car == null) &&
-					(psngr.Lobby != null) && (psngr.Destination != null)).OrderBy(psngr => (CalculatePathPlus1(me, psngr.Lobby.BusStop).Count() + 
+					(psngr.Lobby != null) && (psngr.Destination != null)&& psngr.Destination.Passengers.Intersect(psngr.Enemies).Count() == 0).OrderBy(psngr => (CalculatePathPlus1(me, psngr.Lobby.BusStop).Count() + 
                         CalculatePathPlus1(psngr.Lobby.BusStop, psngr.Destination.BusStop ).Count()) / psngr.PointsDelivered ));
 			return pickup;
 		}
