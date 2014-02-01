@@ -229,11 +229,11 @@ namespace PlayerCSharpAI2.AI
 					case PlayerAIBase.STATUS.PASSENGER_DELIVERED:
 					case PlayerAIBase.STATUS.PASSENGER_ABANDONED:
 						if (Me.Limo.CoffeeServings <= 0)
-							ptDest = Stores.OrderBy(st => rand.Next()).First().BusStop;
+                            ptDest = Stores.OrderBy(st => CalculatePathPlus1(Me, st.BusStop)).First().BusStop;
 						break;
 					case PlayerAIBase.STATUS.PASSENGER_REFUSED_NO_COFFEE:
 					case PlayerAIBase.STATUS.PASSENGER_DELIVERED_AND_PICK_UP_REFUSED:
-						ptDest = Stores.OrderBy(st => rand.Next()).First().BusStop;
+                        ptDest = Stores.OrderBy(st => CalculatePathPlus1(Me, st.BusStop)).First().BusStop;
 						break;
 					case PlayerAIBase.STATUS.COFFEE_STORE_CAR_RESTOCKED:
 						pickup = AllPickups(Me, Passengers);
