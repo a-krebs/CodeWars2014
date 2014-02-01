@@ -25,10 +25,10 @@ namespace PlayerCSharpAI2.AI
 	public class MyPlayerBrain : IPlayerAI
 	{
 		// bugbug - put your team name here.
-		private const string NAME = "Anders Hejlsberg";
+		private const string NAME = "The Optimal Elephants";
 
 		// bugbug - put your school name here. Must be 11 letters or less (ie use MIT, not Massachussets Institute of Technology).
-		public const string SCHOOL = "Windward U.";
+		public const string SCHOOL = "U of A";
 
 		// bugbug - the collections below are not thread safe. If you create worker threads, while the objects will stay in the collections
 		// (except for powerups being moved from PowerUpsDeck -> PowerUpsDrawn -> discarded) the properties of those objects are changed
