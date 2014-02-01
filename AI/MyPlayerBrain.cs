@@ -221,8 +221,26 @@ namespace PlayerCSharpAI2.AI
 						ptDest = pickup[0].Lobby.BusStop;
 						break;
 					case PlayerAIBase.STATUS.PASSENGER_REFUSED_ENEMY:
-						ptDest =
-							Companies.Where(cpy => cpy != Me.Limo.Passenger.Destination).OrderBy(cpy => rand.Next()).First().BusStop;
+                        //If we have a Move Passenger card, use it to move the enemy
+                        PowerUp pu2 = PowerUpHand.Where(card => card.Card == PowerUp.CARD.MOVE_PASSENGER)
+                            .FirstOrDefault(p => p.OkToPlay);
+                        //We have a card to play!
+                        if (pu2 != null)
+                        {
+                            pu2.Passenger = Me.Limo.Passenger.Enemies.Where(en => Me.Limo.Passenger.Destination.Passengers.Contains(en)).First();
+                            if (pu2.Passenger != null)
+                            {
+                                if (log.IsInfoEnabled)
+                                    log.Info(string.Format("Moving enemy away from BusStop", pu2));
+                                playCards(PlayerAIBase.CARD_ACTION.PLAY, pu2);
+                                PowerUpHand.Remove(pu2);
+                                ptDest = Me.Limo.Passenger.Destination.BusStop;
+                                break;
+                            }
+                        }
+                        //Fallthrough
+                        ptDest =
+                            Companies.Where(cpy => cpy != Me.Limo.Passenger.Destination && cpy.Passengers.Intersect(Me.Limo.Passenger.Enemies).Count() == 0).OrderBy(cpy =>  CalculatePathPlus1(Me, cpy.BusStop).Count()).First().BusStop;
 						break;
 					case PlayerAIBase.STATUS.PASSENGER_DELIVERED_AND_PICKED_UP:
 					case PlayerAIBase.STATUS.PASSENGER_PICKED_UP:
@@ -308,8 +326,9 @@ namespace PlayerCSharpAI2.AI
 				return;
 			}
 
-			// can we play one?
-			PowerUp pu2 = PowerUpHand.FirstOrDefault(p => p.OkToPlay);
+			// can we play one? Don't play Passenger Move Card
+			PowerUp pu2 = PowerUpHand.Where(card => card.Card != PowerUp.CARD.MOVE_PASSENGER)
+                .FirstOrDefault(p => p.OkToPlay);
 			if (pu2 == null)
 				return;
 			// 100% play
