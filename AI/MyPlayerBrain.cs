@@ -181,9 +181,10 @@ namespace PlayerCSharpAI2.AI
                 {
                     //If someone else picked up a passenger & it was out target passenger &
                     //we were not going to get coffee, abandon the destination
-                    if (plyrStatus.Limo.Passenger == Me.PickUp.First() &&
+                    if (Me.Limo.Passenger == null && plyrStatus.Limo.Passenger == Me.PickUp.First() &&
                         (Stores.Where(st => st.BusStop == Me.Limo.Path.Last()).Count() == 0))
                     {
+                        Console.WriteLine("other people pick me up");
                         Me.Limo.Path.Clear();
                         Me.PickUp.Clear();
                     }
@@ -453,7 +454,7 @@ namespace PlayerCSharpAI2.AI
 				psngr =>
 					(!me.PassengersDelivered.Contains(psngr)) && (psngr != me.Limo.Passenger) && (psngr.Car == null) &&
 					(psngr.Lobby != null) && (psngr.Destination != null)&& psngr.Destination.Passengers.Intersect(psngr.Enemies).Count() == 0).OrderBy(psngr => (CalculatePathPlus1(me, psngr.Lobby.BusStop).Count() + 
-                        CalculatePathPlus1(psngr.Lobby.BusStop, psngr.Destination.BusStop ).Count()) / psngr.PointsDelivered ));
+                        CalculatePathPlus1(psngr.Lobby.BusStop, psngr.Destination.BusStop ).Count()) / (Math.Log(psngr.PointsDelivered+1)/Math.Log(4))));
 			return pickup;
 		}
 
