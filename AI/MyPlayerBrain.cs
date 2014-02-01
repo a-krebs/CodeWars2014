@@ -405,12 +405,17 @@ namespace PlayerCSharpAI2.AI
 
 		private List<Point> CalculatePathPlus1(Player me, Point ptDest)
 		{
-			List<Point> path = SimpleAStar.CalculatePath(GameMap, me.Limo.TilePosition, ptDest);
-			// add in leaving the bus stop so it has orders while we get the message saying it got there and are deciding what to do next.
-			if (path.Count > 1)
-				path.Add(path[path.Count - 2]);
-			return path;
+            return CalculatePathPlus1(me.Limo.TilePosition, ptDest);
 		}
+
+        private List<Point> CalculatePathPlus1(Point ptStart, Point ptDest)
+        {
+            List<Point> path = SimpleAStar.CalculatePath(GameMap, ptStart, ptDest);
+            // add in leaving the bus stop so it has orders while we get the message saying it got there and are deciding what to do next.
+            if (path.Count > 1)
+                path.Add(path[path.Count - 2]);
+            return path;
+        }
 
 		private static List<Passenger> AllPickups(Player me, IEnumerable<Passenger> passengers)
 		{
