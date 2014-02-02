@@ -79,6 +79,8 @@ namespace PlayerCSharpAI2.AI
 		/// </summary>
 		public Player Me { get; private set; }
 
+        private Boolean haveBeenWarped = false;
+
 		/// <summary>
 		/// The passenger I am presently carrying.
 		/// </summary>
@@ -190,6 +192,33 @@ namespace PlayerCSharpAI2.AI
                     }
                     return;
                 }
+
+                // if we've been warped, handle that
+                if (haveBeenWarped)
+                {
+
+                    if (Me.Limo.Passenger != null)
+                    {
+                        List<Passenger> pickups = AllPickups(Me, Passengers);
+                        List<Company> lobbies = new List<Company>();
+                        lobbies.AddRange(Companies.OrderBy(
+                            cmpy => CalculatePathPlus1(Me, cmpy.BusStop).Count()
+                        ));
+
+                        if (PassengerCost(Me, pickups[0]) - 20 < PassengerCost(Me, Me.Limo.Passenger))
+                        {
+                            SendMyOrder(status, lobbies[0].BusStop, pickups);
+                            String msg = "Decided to abandon passenger.";
+                            Console.Out.WriteLine(msg);
+                            if (log.IsInfoEnabled)
+                                log.Info(msg);
+                            haveBeenWarped = false;
+                            return;
+                        }
+                    }
+
+                    haveBeenWarped = false;
+                }
                 //Activate cards, if necessary
                 IEnumerable<PowerUp> inactivePowerUpList = PowerUpHand.Where(card => card.OkToPlay == false);
                 if (inactivePowerUpList.Count() > 0 && 
@@ -268,37 +297,54 @@ namespace PlayerCSharpAI2.AI
 
 				DisplayOrders(ptDest);
 
-				// get the path from where we are to the dest.
-				List<Point> path = CalculatePathPlus1(Me, ptDest);
-
-				if (log.IsDebugEnabled)
-					log.Debug(string.Format("{0}; Path:{1}-{2}, {3} steps; Pickup:{4}, {5} total",
-						status,
-						path.Count > 0 ? path[0].ToString() : "{n/a}",
-						path.Count > 0 ? path[path.Count - 1].ToString() : "{n/a}",
-						path.Count,
-						pickup.Count == 0 ? "{none}" : pickup[0].Name,
-						pickup.Count));
-
-				// update our saved Player to match new settings
-				if (path.Count > 0)
-				{
-					Me.Limo.Path.Clear();
-					Me.Limo.Path.AddRange(path);
-				}
-				if (pickup.Count > 0)
-				{
-					Me.PickUp.Clear();
-					Me.PickUp.AddRange(pickup);
-				}
-
-				sendOrders("move", path, pickup);
+                SendMyOrder(status, ptDest, pickup);
 			}
 			catch (Exception ex)
 			{
 				log.Error(string.Format("GameStatus({0}, {1}, ...", status, Me == null ? "{null}" : Me.Name), ex);
 			}
 		}
+
+        private void SendMyOrder(PlayerAIBase.STATUS status, Point ptDest, List<Passenger> pickup)
+        {
+            // get the path from where we are to the dest.
+            List<Point> path = CalculatePathPlus1(Me, ptDest);
+
+            if (log.IsDebugEnabled)
+                log.Debug(string.Format("{0}; Path:{1}-{2}, {3} steps; Pickup:{4}, {5} total",
+                    status,
+                    path.Count > 0 ? path[0].ToString() : "{n/a}",
+                    path.Count > 0 ? path[path.Count - 1].ToString() : "{n/a}",
+                    path.Count,
+                    pickup.Count == 0 ? "{none}" : pickup[0].Name,
+                    pickup.Count));
+
+            // update our saved Player to match new settings
+            if (path.Count > 0)
+            {
+                Me.Limo.Path.Clear();
+                Me.Limo.Path.AddRange(path);
+            }
+            if (pickup.Count > 0)
+            {
+                Me.PickUp.Clear();
+                Me.PickUp.AddRange(pickup);
+            }
+
+            sendOrders("move", path, pickup);
+        }
+
+        private void MaybeDropCurrentPassenger(PlayerAIBase.STATUS status) {
+            // two cases:
+            // 1) we are warped somewhere else, and the current passenger is too expensive to drop off
+            // 2) our passenger has changed destionation, and the new destination is too expensive
+            String msg = "Warped or passenger destination change.";
+            Console.Out.WriteLine(msg);
+            if (log.IsInfoEnabled)
+                log.Info(msg);
+
+            haveBeenWarped = true;
+        }
 
 		private void MaybePlayPowerUp()
 		{
@@ -363,9 +409,9 @@ namespace PlayerCSharpAI2.AI
 		public void PowerupStatus(PlayerAIBase.STATUS puStatus, Player plyrPowerUp, PowerUp cardPlayed)
 		{
 			// redo the path if we got relocated
-			if ((puStatus == PlayerAIBase.STATUS.POWER_UP_PLAYED) && ((cardPlayed.Card == PowerUp.CARD.RELOCATE_ALL_CARS) || 
-									((cardPlayed.Card == PowerUp.CARD.CHANGE_DESTINATION) && cardPlayed.Player.Guid == Me.Guid)))
-				GameStatus(PlayerAIBase.STATUS.NO_PATH, Me);
+            if ((puStatus == PlayerAIBase.STATUS.POWER_UP_PLAYED) && ((cardPlayed.Card == PowerUp.CARD.RELOCATE_ALL_CARS) ||
+                                    ((cardPlayed.Card == PowerUp.CARD.CHANGE_DESTINATION) && cardPlayed.Player.Guid == Me.Guid)))
+                MaybeDropCurrentPassenger(puStatus);
 		}
 
 		private void DisplayStatus(PlayerAIBase.STATUS status, Player plyrStatus)
@@ -454,9 +500,20 @@ namespace PlayerCSharpAI2.AI
 				psngr =>
 					(!me.PassengersDelivered.Contains(psngr)) && (psngr != me.Limo.Passenger) && (psngr.Car == null) &&
 					(psngr.Lobby != null) && (psngr.Destination != null)&& psngr.Destination.Passengers.Intersect(psngr.Enemies).Count() == 0).OrderBy(psngr => (CalculatePathPlus1(me, psngr.Lobby.BusStop).Count() + 
-                        CalculatePathPlus1(psngr.Lobby.BusStop, psngr.Destination.BusStop ).Count()) / (Math.Log(psngr.PointsDelivered+1)/Math.Log(3))));
+                        PassengerCost(me, psngr)))
+            );
 			return pickup;
 		}
+
+        private double PassengerCost(Player me, Passenger psngr)
+        {
+            if (me.Limo.Passenger == psngr) {
+                return CalculatePathPlus1(me, psngr.Destination.BusStop).Count() / (Math.Log(psngr.PointsDelivered + 1) / Math.Log(3));
+            } else {
+                return (CalculatePathPlus1(me, psngr.Lobby.BusStop).Count() +
+                        CalculatePathPlus1(psngr.Lobby.BusStop, psngr.Destination.BusStop ).Count()) / (Math.Log(psngr.PointsDelivered+1)/Math.Log(3));
+            }
+        }
 
 	}
 }
