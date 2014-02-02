@@ -454,7 +454,7 @@ namespace PlayerCSharpAI2.AI
 				psngr =>
 					(!me.PassengersDelivered.Contains(psngr)) && (psngr != me.Limo.Passenger) && (psngr.Car == null) &&
 					(psngr.Lobby != null) && (psngr.Destination != null)&& psngr.Destination.Passengers.Intersect(psngr.Enemies).Count() == 0).OrderBy(psngr => (CalculatePathPlus1(me, psngr.Lobby.BusStop).Count() + 
-                        CalculatePathPlus1(psngr.Lobby.BusStop, psngr.Destination.BusStop ).Count()) / (Math.Log(psngr.PointsDelivered+1)/Math.Log(4))));
+                        CalculatePathPlus1(psngr.Lobby.BusStop, psngr.Destination.BusStop ).Count()) / (Math.Log(psngr.PointsDelivered+1)/Math.Log(3))));
 			return pickup;
 		}
 
