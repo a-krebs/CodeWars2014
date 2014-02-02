@@ -338,7 +338,7 @@ namespace PlayerCSharpAI2.AI
 				for (int index = 0; index < Me.MaxCardsInHand - PowerUpHand.Count && PowerUpDeck.Count > 0; index++)
 				{
 					// select a card
-					PowerUp pu = PowerUpDeck.First();
+					PowerUp pu = PowerUpDeck.Last();
 					PowerUpDeck.Remove(pu);
 					PowerUpHand.Add(pu);
 					playCards(PlayerAIBase.CARD_ACTION.DRAW, pu);
